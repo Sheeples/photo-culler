@@ -34,7 +34,7 @@ No Node.js, no npm, no Electron, no Docker.
 ## Quick start
 
 ```bash
-git clone https://github.com/yourname/photo-culler.git
+git clone https://github.com/sheeples/photo-culler.git
 cd photo-culler
 ```
 
