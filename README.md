@@ -1,6 +1,6 @@
 # Photo Culler
 
-A local desktop-style app for culling photos fast. Works like Tinder — swipe or press arrow keys to keep or reject photos one by one. When you're done, it shows you exactly which files to delete and can delete them for you with a single click.
+A local desktop-style app for culling photos fast. Swipe or press arrow keys to keep or reject photos one by one. When you're done, it shows you exactly which files to delete and can delete them for you with a single click.
 
 Runs entirely on your machine. No cloud, no account, no internet required.
 
@@ -10,7 +10,7 @@ Runs entirely on your machine. No cloud, no account, no internet required.
 
 ## Features
 
-- **Tinder-style card UI** — swipe the card left/right, click buttons, or use the keyboard
+- **Swipe-style card UI** — swipe the card left/right, click buttons, or use the keyboard
 - **Zoom & pan** — click the magnifying glass (or press `Space`) to inspect a photo at full resolution; scroll to zoom, drag to pan, pinch on touch screens
 - **RAW file support** — reads 23 RAW formats (CR2, CR3, NEF, ARW, DNG, ORF, RAF, RW2, and more) by extracting the embedded JPEG preview; falls back to full decode when no preview is embedded
 - **Finish early** — stop mid-session at any time; unreviewed photos are automatically kept
