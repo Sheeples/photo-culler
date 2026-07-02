@@ -15,7 +15,7 @@ Runs entirely on your machine. No cloud, no account, no internet required.
 - **RAW file support** — reads 23 RAW formats (CR2, CR3, NEF, ARW, DNG, ORF, RAF, RW2, and more) by extracting the embedded JPEG preview; falls back to full decode when no preview is embedded
 - **Finish early** — stop mid-session at any time; unreviewed photos are automatically kept
 - **Undo** — step back through decisions during culling with `Z`
-- **Safe delete with undo** — rejected files are moved to a holding area first; restore them in one click if you change your mind
+- **Confirmed delete** — a modal shows exactly which files will be removed, with a 2-second countdown before the destructive button unlocks
 - **Delete from the app** — or copy the shell command and run it yourself
 - **Cross-platform** — macOS, Linux, and Windows; auto-opens the browser on launch
 
@@ -89,9 +89,7 @@ After the last card (or after clicking **Finish**), you'll see:
 - How many photos were kept vs. rejected
 - The full list of files marked for deletion
 - A shell command you can copy and run yourself
-- A **Delete Files Now** button that moves the rejected files to a holding area and shows an **Undo Delete** button so you can restore them if needed
-
-> **Note:** Files moved via *Delete Files Now* go to `~/.photo-culler-trash/` (macOS/Linux) or `%USERPROFILE%\.photo-culler-trash\` (Windows), not to the system Trash. They stay there until you undo or manually delete that folder.
+- A **Delete Files Now** button that opens a confirmation modal listing every file, with a 2-second lockout before you can confirm — preventing accidental permanent deletion
 
 ---
 
