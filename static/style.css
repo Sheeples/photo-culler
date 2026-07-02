@@ -1,0 +1,598 @@
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #111113;
+  --surface: #1c1c1f;
+  --surface2: #26262b;
+  --border: #2e2e35;
+  --text: #f0f0f2;
+  --muted: #888;
+  --keep: #2ecc71;
+  --reject: #e74c3c;
+  --undo: #f39c12;
+  --radius: 18px;
+  --shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Screens ── */
+.screen {
+  display: none;
+  width: 100%;
+  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.screen.active { display: flex; }
+
+/* ── Screen 1: Picker ── */
+.picker-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 48px 40px;
+  width: 420px;
+  max-width: 95vw;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.logo { font-size: 48px; margin-bottom: 12px; }
+
+h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 32px;
+}
+
+#folder-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+#folder-form label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+}
+
+#folder-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 15px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+#folder-input:focus { border-color: #555; }
+
+.btn-primary {
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.error {
+  color: var(--reject);
+  font-size: 13px;
+  margin-top: 12px;
+  text-align: center;
+}
+.hidden { display: none !important; }
+
+/* ── Screen 2: Culling ── */
+.cull-header {
+  width: 100%;
+  max-width: 520px;
+  padding: 16px 20px 0;
+}
+
+.progress-wrap {
+  background: var(--surface2);
+  border-radius: 99px;
+  height: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--text);
+  border-radius: 99px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.progress-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── Card Arena ── */
+.card-arena {
+  position: relative;
+  width: min(460px, 92vw);
+  height: min(560px, 62vh);
+  margin: 16px auto 0;
+}
+
+.photo-card {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+/* Stacked card underneath */
+.card-next {
+  transform: scale(0.95) translateY(8px);
+  opacity: 0.5;
+  z-index: 1;
+}
+.card-current {
+  z-index: 2;
+  cursor: grab;
+  transition: transform 0.05s;
+}
+.card-current:active { cursor: grabbing; }
+
+/* Swipe labels */
+.swipe-label {
+  position: absolute;
+  top: 28px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border-width: 3px;
+  border-style: solid;
+  opacity: 0;
+  transition: opacity 0.1s;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+.label-keep {
+  right: 24px;
+  color: var(--keep);
+  border-color: var(--keep);
+  transform: rotate(15deg);
+}
+.label-reject {
+  left: 24px;
+  color: var(--reject);
+  border-color: var(--reject);
+  transform: rotate(-15deg);
+}
+
+/* Animate while swiping */
+.card-current.dragging { transition: none; }
+
+/* ── Swipe animations ── */
+@keyframes swipe-right {
+  to { transform: translateX(150%) rotate(30deg); opacity: 0; }
+}
+@keyframes swipe-left {
+  to { transform: translateX(-150%) rotate(-30deg); opacity: 0; }
+}
+.card-current.fly-right { animation: swipe-right 0.35s ease-in forwards; }
+.card-current.fly-left  { animation: swipe-left  0.35s ease-in forwards; }
+
+/* ── Filename ── */
+.filename-row {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  max-width: 460px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 20px;
+}
+
+/* ── Action Buttons ── */
+.action-bar {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 2px solid var(--border);
+  border-radius: 50px;
+  background: var(--surface);
+  cursor: pointer;
+  padding: 14px 28px;
+  transition: transform 0.1s, border-color 0.15s, background 0.15s;
+}
+.action-btn:active { transform: scale(0.95); }
+
+.action-btn .action-icon { font-size: 22px; }
+.action-btn .action-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+
+.action-btn.reject:hover  { border-color: var(--reject); background: rgba(231,76,60,0.12); }
+.action-btn.reject:hover .action-icon { color: var(--reject); }
+
+.action-btn.keep:hover    { border-color: var(--keep);   background: rgba(46,204,113,0.12); }
+.action-btn.keep:hover .action-icon { color: var(--keep); }
+
+.action-btn.undo { padding: 14px 20px; }
+.action-btn.undo:hover    { border-color: var(--undo);   background: rgba(243,156,18,0.12); }
+.action-btn.undo:hover .action-icon { color: var(--undo); }
+
+.keyboard-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* ── Zoom button on card ── */
+.btn-card-zoom {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 10;
+  padding: 6px;
+}
+.btn-card-zoom svg { width: 100%; height: 100%; }
+.photo-card:hover .btn-card-zoom { opacity: 1; }
+.btn-card-zoom:hover { background: rgba(0,0,0,0.75); }
+
+/* ── Zoom Overlay ── */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.96);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+.zoom-overlay.hidden { display: none; }
+
+.zoom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.zoom-filename {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.zoom-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.zoom-level {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 42px;
+  text-align: right;
+}
+.btn-zoom-ctrl {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-zoom-ctrl:hover { background: var(--surface); }
+.btn-zoom-close-x { padding: 4px 8px; }
+
+.zoom-canvas {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-in;
+  position: relative;
+}
+.zoom-canvas.panning { cursor: grabbing; }
+.zoom-canvas.zoomed  { cursor: grab; }
+
+#zoom-img {
+  max-width: none;
+  max-height: none;
+  display: block;
+  transform-origin: center center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.zoom-footer-hint {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.4;
+  padding: 8px;
+}
+
+/* Finish early button in progress row */
+.btn-finish-early {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  margin-left: 12px;
+  vertical-align: middle;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-finish-early:hover { border-color: #555; color: var(--text); }
+
+/* ── Screen 3: Results ── */
+.results-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  width: 560px;
+  max-width: 95vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  scrollbar-width: thin;
+}
+
+.results-icon { font-size: 48px; text-align: center; margin-bottom: 10px; }
+h2 { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 24px; }
+h3 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); margin-bottom: 10px; }
+
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.stat { text-align: center; }
+.stat-num { font-size: 36px; font-weight: 800; }
+.stat-num.rejected { color: var(--reject); }
+.stat-label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.file-list {
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 0;
+}
+.file-list li {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-list li:last-child { border-bottom: none; }
+
+.command-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.command-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+  gap: 8px;
+}
+.command-tabs {
+  display: flex;
+  gap: 4px;
+}
+.cmd-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.cmd-tab:hover { color: var(--text); }
+.cmd-tab.active {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface2);
+}
+.btn-copy {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-copy:hover { background: var(--surface); }
+.btn-copy.copied { color: var(--keep); border-color: var(--keep); }
+
+.command-text {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: #c8ff9e;
+  padding: 14px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.warning {
+  font-size: 12px;
+  color: var(--undo);
+  margin-bottom: 24px;
+}
+
+.muted { color: var(--muted); font-size: 14px; margin-bottom: 24px; text-align: center; }
+
+/* Delete files button */
+.btn-delete {
+  display: block;
+  width: 100%;
+  background: rgba(231,76,60,0.12);
+  border: 1px solid var(--reject);
+  border-radius: 10px;
+  color: var(--reject);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.15s;
+}
+.btn-delete:hover:not(:disabled) { background: rgba(231,76,60,0.22); }
+.btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.delete-done {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(46,204,113,0.08);
+  border: 1px solid rgba(46,204,113,0.3);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.delete-status {
+  font-size: 13px;
+  color: var(--keep);
+  margin: 0;
+}
+
+.btn-undo-delete {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.btn-undo-delete:hover:not(:disabled) { border-color: #555; background: var(--surface2); }
+.btn-undo-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.delete-error {
+  font-size: 13px;
+  color: var(--reject);
+  margin-bottom: 8px;
+}
+
+.results-actions { text-align: center; }
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 11px 24px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary:hover { background: var(--surface2); }

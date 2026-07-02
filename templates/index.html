@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Culler</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script>window.IS_WINDOWS = {{ 'true' if is_windows else 'false' }};</script>
+</head>
+<body>
+
+  <!-- ── SCREEN 1: Folder Picker ── -->
+  <div id="screen-picker" class="screen active">
+    <div class="picker-card">
+      <div class="logo">📷</div>
+      <h1>Photo Culler</h1>
+      <p class="subtitle">Swipe right to keep, left to reject</p>
+      <form id="folder-form">
+        <label for="folder-input">Folder path</label>
+        <input
+          type="text"
+          id="folder-input"
+          placeholder="e.g. ~/Photos/sonichu"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button type="submit" class="btn-primary">Load Photos</button>
+      </form>
+      <p id="picker-error" class="error hidden"></p>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: Culling ── -->
+  <div id="screen-cull" class="screen">
+    <header class="cull-header">
+      <div class="progress-wrap">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+      <div class="progress-text">
+        <span id="counter-current">1</span> / <span id="counter-total">?</span>
+        <button id="btn-finish-early" class="btn-finish-early" title="Stop culling and go to results">Finish</button>
+      </div>
+    </header>
+
+    <div class="card-arena">
+      <!-- Next card (below) -->
+      <div id="card-next" class="photo-card card-next">
+        <img id="img-next" src="" alt="" />
+      </div>
+      <!-- Current card -->
+      <div id="card-current" class="photo-card card-current">
+        <img id="img-current" src="" alt="" />
+        <div class="swipe-label label-keep">KEEP ✓</div>
+        <div class="swipe-label label-reject">REJECT ✗</div>
+        <button id="btn-zoom" class="btn-card-zoom" title="Zoom (Space)">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="8.5" cy="8.5" r="5.5"/>
+            <line x1="13" y1="13" x2="18" y2="18"/>
+            <line x1="6.5" y1="8.5" x2="10.5" y2="8.5"/>
+            <line x1="8.5" y1="6.5" x2="8.5" y2="10.5"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="filename-row">
+      <span id="filename-label"></span>
+    </div>
+
+    <div class="action-bar">
+      <button id="btn-reject" class="action-btn reject" title="Reject (← or X)">
+        <span class="action-icon">✗</span>
+        <span class="action-label">Reject</span>
+      </button>
+      <button id="btn-undo" class="action-btn undo" title="Undo (Z)">
+        <span class="action-icon">↩</span>
+        <span class="action-label">Undo</span>
+      </button>
+      <button id="btn-keep" class="action-btn keep" title="Keep (→ or C)">
+        <span class="action-icon">✓</span>
+        <span class="action-label">Keep</span>
+      </button>
+    </div>
+
+    <div class="keyboard-hint">
+      ← Reject &nbsp;|&nbsp; → Keep &nbsp;|&nbsp; Z Undo &nbsp;|&nbsp; Space Zoom
+    </div>
+  </div>
+
+  <!-- ── Zoom Overlay ── -->
+  <div id="zoom-overlay" class="zoom-overlay hidden">
+    <div class="zoom-header">
+      <span id="zoom-filename-label" class="zoom-filename"></span>
+      <div class="zoom-controls-bar">
+        <span id="zoom-level-label" class="zoom-level">100%</span>
+        <button id="btn-zoom-fit"   class="btn-zoom-ctrl" title="Fit to screen">Fit</button>
+        <button id="btn-zoom-100"   class="btn-zoom-ctrl" title="Actual size">1:1</button>
+        <button id="btn-zoom-close" class="btn-zoom-ctrl btn-zoom-close-x" title="Close (Esc)">✕</button>
+      </div>
+    </div>
+    <div id="zoom-canvas" class="zoom-canvas">
+      <img id="zoom-img" src="" alt="" draggable="false" />
+    </div>
+    <div class="zoom-footer-hint">Scroll to zoom · Drag to pan · Double-click to fit</div>
+  </div>
+
+  <!-- ── SCREEN 3: Results ── -->
+  <div id="screen-results" class="screen">
+    <div class="results-card">
+      <div class="results-icon">🎉</div>
+      <h2>Culling Complete</h2>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-num" id="stat-kept">0</div>
+          <div class="stat-label">Kept</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num rejected" id="stat-rejected">0</div>
+          <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+
+      <div id="results-empty" class="hidden">
+        <p class="muted">No photos were rejected — nothing to delete.</p>
+      </div>
+
+      <div id="results-rejected-section">
+        <h3>Files to delete</h3>
+        <ul id="rejected-list" class="file-list"></ul>
+
+        <div class="command-block">
+          <div class="command-header">
+            <div class="command-tabs" id="command-tabs">
+              <button class="cmd-tab active" data-tab="primary" id="tab-primary">Terminal</button>
+              <button class="cmd-tab" data-tab="alt" id="tab-alt" style="display:none">Command Prompt</button>
+            </div>
+            <button id="btn-copy" class="btn-copy">Copy</button>
+          </div>
+          <pre id="delete-command" class="command-text"></pre>
+        </div>
+
+        <p class="warning">⚠ This will permanently delete the files. Make sure you have a backup.</p>
+
+        <div id="delete-action">
+          <button id="btn-delete-files" class="btn-delete">Delete Files Now</button>
+          <div id="delete-done" class="delete-done hidden">
+            <p id="delete-status" class="delete-status"></p>
+            <button id="btn-undo-delete" class="btn-undo-delete">Undo Delete</button>
+          </div>
+          <p id="delete-error" class="delete-error hidden"></p>
+        </div>
+      </div>
+
+      <div class="results-actions">
+        <button id="btn-restart" class="btn-secondary">Cull Another Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
