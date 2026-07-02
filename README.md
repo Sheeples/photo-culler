@@ -27,8 +27,6 @@ Runs entirely on your machine. No cloud, no account, no internet required.
   - Windows: check *"Add Python to PATH"* during installation
 - **Git** (to clone) — [git-scm.com](https://git-scm.com)
 
-No Node.js, no npm, no Electron, no Docker.
-
 ---
 
 ## Quick start
