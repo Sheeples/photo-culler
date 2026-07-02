@@ -4,7 +4,7 @@ A local desktop-style app for culling photos fast. Works like Tinder — swipe o
 
 Runs entirely on your machine. No cloud, no account, no internet required.
 
-![Culling screen showing a photo card with Reject/Undo/Keep buttons](https://raw.githubusercontent.com/placeholder/photo-culler/main/docs/screenshot.png)
+![Culling screen showing a photo card with Reject/Undo/Keep buttons](https://raw.githubusercontent.com/Sheeples/photo-culler/main/docs/screenshot.png)
 
 ---
 
