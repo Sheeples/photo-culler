@@ -1,13 +1,8 @@
 import io
 import os
-import re
 import sys
-import json
-import shutil
-import uuid
 import threading
 import webbrowser
-from datetime import datetime
 from flask import Flask, render_template, jsonify, request, send_file, abort
 
 app = Flask(__name__)
@@ -17,7 +12,6 @@ RAW_EXTENSIONS  = {'.cr2', '.cr3', '.nef', '.arw', '.dng', '.orf', '.rw2', '.raf
                    '.rwl', '.mrw', '.pef', '.srw', '.x3f', '.3fr', '.mef', '.mos',
                    '.nrw', '.raw', '.ptx', '.r3d', '.erf', '.kdc', '.dcr'}
 SUPPORTED_EXTENSIONS = JPEG_EXTENSIONS | RAW_EXTENSIONS
-TRASH_DIR = os.path.expanduser('~/.photo-culler-trash')
 IS_WINDOWS = sys.platform == 'win32'
 
 
@@ -142,74 +136,22 @@ def delete_command():
 @app.route('/api/delete-files', methods=['POST'])
 def delete_files():
     rejected = request.json.get('rejected', [])
-
-    session_id = datetime.now().strftime('%Y%m%d_%H%M%S_') + uuid.uuid4().hex[:8]
-    session_dir = os.path.join(TRASH_DIR, session_id)
-    os.makedirs(session_dir, exist_ok=True)
-
-    moved = []
+    deleted = []
     errors = []
-    manifest = []
 
     for path in rejected:
         path = os.path.expanduser(path)
-        filename = os.path.basename(path)
-        dest = os.path.join(session_dir, filename)
-        if os.path.exists(dest):
-            base, ext = os.path.splitext(filename)
-            dest = os.path.join(session_dir, f'{base}_{uuid.uuid4().hex[:4]}{ext}')
         try:
-            shutil.move(path, dest)
-            manifest.append({'original': path, 'held': dest})
-            moved.append(path)
+            os.remove(path)
+            deleted.append(path)
         except FileNotFoundError:
-            errors.append(f'{path}: not found')
+            errors.append(f'{os.path.basename(path)}: not found')
         except PermissionError:
-            errors.append(f'{path}: permission denied')
+            errors.append(f'{os.path.basename(path)}: permission denied')
         except Exception as e:
-            errors.append(f'{path}: {e}')
+            errors.append(f'{os.path.basename(path)}: {e}')
 
-    with open(os.path.join(session_dir, 'manifest.json'), 'w') as f:
-        json.dump(manifest, f, indent=2)
-
-    return jsonify({'session_id': session_id, 'moved': moved, 'errors': errors})
-
-
-@app.route('/api/undo-delete', methods=['POST'])
-def undo_delete():
-    session_id = request.json.get('session_id', '')
-    # Only allow safe session IDs (alphanumeric + underscores, no path separators)
-    if not session_id or not re.match(r'^[\w]+$', session_id):
-        return jsonify({'error': 'Invalid session'}), 400
-
-    session_dir = os.path.join(TRASH_DIR, session_id)
-    manifest_path = os.path.join(session_dir, 'manifest.json')
-
-    if not os.path.exists(manifest_path):
-        return jsonify({'error': 'Session not found or already cleaned up'}), 404
-
-    with open(manifest_path) as f:
-        manifest = json.load(f)
-
-    restored = []
-    errors = []
-
-    for entry in manifest:
-        held = entry.get('held', '')
-        original = entry.get('original', '')
-        if not os.path.exists(held):
-            errors.append(f'{original}: file missing from holding area')
-            continue
-        try:
-            shutil.move(held, original)
-            restored.append(original)
-        except Exception as e:
-            errors.append(f'{original}: {e}')
-
-    if not errors:
-        shutil.rmtree(session_dir, ignore_errors=True)
-
-    return jsonify({'restored': restored, 'errors': errors})
+    return jsonify({'deleted': deleted, 'errors': errors})
 
 
 def _open_browser():

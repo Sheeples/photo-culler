@@ -148,16 +148,30 @@
 
         <div id="delete-action">
           <button id="btn-delete-files" class="btn-delete">Delete Files Now</button>
-          <div id="delete-done" class="delete-done hidden">
-            <p id="delete-status" class="delete-status"></p>
-            <button id="btn-undo-delete" class="btn-undo-delete">Undo Delete</button>
-          </div>
-          <p id="delete-error" class="delete-error hidden"></p>
+          <p id="delete-result" class="delete-result hidden"></p>
         </div>
       </div>
 
       <div class="results-actions">
         <button id="btn-restart" class="btn-secondary">Cull Another Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Confirm Delete Modal ── -->
+  <div id="confirm-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-icon">🗑️</div>
+      <h2 id="modal-title" class="modal-title">Permanently Delete Photos?</h2>
+      <p id="modal-body" class="modal-body"></p>
+      <ul id="modal-file-list" class="modal-file-list"></ul>
+      <p class="modal-warning">This cannot be undone. Make sure you have a backup.</p>
+      <div class="modal-actions">
+        <button id="btn-modal-cancel" class="btn-modal-cancel">Cancel</button>
+        <button id="btn-modal-confirm" class="btn-modal-confirm" disabled>
+          <span id="modal-confirm-label">Delete</span>
+          <span id="modal-countdown" class="modal-countdown"></span>
+        </button>
       </div>
     </div>
   </div>

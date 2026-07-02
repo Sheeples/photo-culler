@@ -50,15 +50,19 @@ const btnUndo       = document.getElementById('btn-undo');
 const btnKeep       = document.getElementById('btn-keep');
 
 const btnDeleteFiles  = document.getElementById('btn-delete-files');
-const deleteDone      = document.getElementById('delete-done');
-const deleteStatus    = document.getElementById('delete-status');
-const btnUndoDelete   = document.getElementById('btn-undo-delete');
-const deleteError     = document.getElementById('delete-error');
+const deleteResult    = document.getElementById('delete-result');
+const confirmModal    = document.getElementById('confirm-modal');
+const modalFileList   = document.getElementById('modal-file-list');
+const modalBody       = document.getElementById('modal-body');
+const modalConfirmLabel = document.getElementById('modal-confirm-label');
+const modalCountdown  = document.getElementById('modal-countdown');
+const btnModalCancel  = document.getElementById('btn-modal-cancel');
+const btnModalConfirm = document.getElementById('btn-modal-confirm');
 const tabPrimary      = document.getElementById('tab-primary');
 const tabAlt          = document.getElementById('tab-alt');
-let   deleteSessionId = null;
 let   cmdPrimary      = '';
 let   cmdAlt          = '';
+let   countdownTimer  = null;
 const statKept      = document.getElementById('stat-kept');
 const statRejected  = document.getElementById('stat-rejected');
 const statTotal     = document.getElementById('stat-total');
@@ -287,14 +291,63 @@ async function showResults() {
   showScreen(screenResults);
 }
 
-/* ── Delete files ── */
-btnDeleteFiles.addEventListener('click', async () => {
+/* ── Delete modal ── */
+function openConfirmModal() {
   const paths = [...rejectedList.querySelectorAll('li')].map(li => li.textContent);
   if (!paths.length) return;
 
+  const n = paths.length;
+  modalBody.textContent = `You are about to permanently delete ${n} photo${n !== 1 ? 's' : ''}.`;
+  modalConfirmLabel.textContent = `Delete ${n} Photo${n !== 1 ? 's' : ''}`;
+
+  modalFileList.innerHTML = '';
+  paths.forEach(p => {
+    const li = document.createElement('li');
+    li.textContent = p;
+    modalFileList.appendChild(li);
+  });
+
+  // Countdown: confirm button unlocks after 2 seconds
+  btnModalConfirm.disabled = true;
+  let remaining = 2;
+  modalCountdown.textContent = `(${remaining}s)`;
+
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      btnModalConfirm.disabled = false;
+      modalCountdown.textContent = '';
+    } else {
+      modalCountdown.textContent = `(${remaining}s)`;
+    }
+  }, 1000);
+
+  confirmModal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConfirmModal() {
+  clearInterval(countdownTimer);
+  confirmModal.classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+btnDeleteFiles.addEventListener('click', openConfirmModal);
+btnModalCancel.addEventListener('click', closeConfirmModal);
+confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirmModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !confirmModal.classList.contains('hidden')) closeConfirmModal();
+});
+
+btnModalConfirm.addEventListener('click', async () => {
+  const paths = [...rejectedList.querySelectorAll('li')].map(li => li.textContent);
+  closeConfirmModal();
+
   btnDeleteFiles.disabled = true;
   btnDeleteFiles.textContent = 'Deleting…';
-  deleteError.classList.add('hidden');
+  deleteResult.className = 'delete-result hidden';
 
   try {
     const res = await fetch('/api/delete-files', {
@@ -304,63 +357,24 @@ btnDeleteFiles.addEventListener('click', async () => {
     });
     const data = await res.json();
 
-    if (data.errors && data.errors.length > 0) {
-      deleteError.textContent = `Failed: ${data.errors.join('; ')}`;
-      deleteError.classList.remove('hidden');
+    deleteResult.classList.remove('hidden');
+    if (!data.errors || data.errors.length === 0) {
+      const n = data.deleted.length;
+      deleteResult.textContent = `✓ ${n} file${n !== 1 ? 's' : ''} permanently deleted.`;
+      deleteResult.classList.add('success');
+      btnDeleteFiles.classList.add('hidden');
+    } else {
+      deleteResult.textContent = `Deleted ${data.deleted.length}, failed: ${data.errors.join('; ')}`;
+      deleteResult.classList.add('failure');
       btnDeleteFiles.textContent = 'Retry';
       btnDeleteFiles.disabled = false;
-    } else {
-      deleteSessionId = data.session_id;
-      const n = data.moved.length;
-      deleteStatus.textContent = `✓ ${n} file${n !== 1 ? 's' : ''} moved to holding area.`;
-      btnDeleteFiles.classList.add('hidden');
-      deleteDone.classList.remove('hidden');
     }
   } catch (err) {
-    deleteError.textContent = `Error: ${err.message}`;
-    deleteError.classList.remove('hidden');
+    deleteResult.textContent = `Error: ${err.message}`;
+    deleteResult.classList.remove('hidden');
+    deleteResult.classList.add('failure');
     btnDeleteFiles.textContent = 'Delete Files Now';
     btnDeleteFiles.disabled = false;
-  }
-});
-
-/* ── Undo delete ── */
-btnUndoDelete.addEventListener('click', async () => {
-  if (!deleteSessionId) return;
-  btnUndoDelete.disabled = true;
-  btnUndoDelete.textContent = 'Restoring…';
-
-  try {
-    const res = await fetch('/api/undo-delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ session_id: deleteSessionId }),
-    });
-    const data = await res.json();
-
-    if (data.error || (data.errors && data.errors.length > 0)) {
-      const msg = data.error || data.errors.join('; ');
-      deleteError.textContent = `Restore failed: ${msg}`;
-      deleteError.classList.remove('hidden');
-      btnUndoDelete.textContent = 'Undo Delete';
-      btnUndoDelete.disabled = false;
-    } else {
-      deleteSessionId = null;
-      deleteDone.classList.add('hidden');
-      deleteError.classList.add('hidden');
-      btnDeleteFiles.textContent = 'Delete Files Now';
-      btnDeleteFiles.disabled = false;
-      btnDeleteFiles.classList.remove('hidden');
-      // Brief confirmation in the error slot (reuse as info)
-      deleteError.style.color = 'var(--keep)';
-      deleteError.textContent = `✓ ${data.restored.length} file${data.restored.length !== 1 ? 's' : ''} restored to original location.`;
-      deleteError.classList.remove('hidden');
-    }
-  } catch (err) {
-    deleteError.textContent = `Error: ${err.message}`;
-    deleteError.classList.remove('hidden');
-    btnUndoDelete.textContent = 'Undo Delete';
-    btnUndoDelete.disabled = false;
   }
 });
 
@@ -576,16 +590,11 @@ btnRestart.addEventListener('click', () => {
   index = 0;
   decisions = [];
   // Reset delete/command state
-  deleteSessionId = null;
   cmdPrimary = ''; cmdAlt = '';
   tabPrimary.classList.add('active');
   tabAlt.classList.remove('active');
   tabAlt.style.display = 'none';
-  deleteDone.classList.add('hidden');
-  deleteError.classList.add('hidden');
-  deleteError.style.color = 'var(--reject)';
-  btnUndoDelete.textContent = 'Undo Delete';
-  btnUndoDelete.disabled = false;
+  deleteResult.className = 'delete-result hidden';
   btnDeleteFiles.classList.remove('hidden');
   btnDeleteFiles.disabled = false;
   btnDeleteFiles.textContent = 'Delete Files Now';
