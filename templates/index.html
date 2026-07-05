@@ -92,19 +92,21 @@
 
   <!-- ── Zoom Overlay ── -->
   <div id="zoom-overlay" class="zoom-overlay hidden">
-    <div class="zoom-header">
-      <span id="zoom-filename-label" class="zoom-filename"></span>
-      <div class="zoom-controls-bar">
-        <span id="zoom-level-label" class="zoom-level">100%</span>
-        <button id="btn-zoom-fit"   class="btn-zoom-ctrl" title="Fit to screen">Fit</button>
-        <button id="btn-zoom-100"   class="btn-zoom-ctrl" title="Actual size">1:1</button>
-        <button id="btn-zoom-close" class="btn-zoom-ctrl btn-zoom-close-x" title="Close (Esc)">✕</button>
+    <div class="zoom-panel">
+      <div class="zoom-header">
+        <span id="zoom-filename-label" class="zoom-filename"></span>
+        <div class="zoom-controls-bar">
+          <span id="zoom-level-label" class="zoom-level">100%</span>
+          <button id="btn-zoom-fit"   class="btn-zoom-ctrl" title="Fit to screen">Fit</button>
+          <button id="btn-zoom-100"   class="btn-zoom-ctrl" title="Actual size">1:1</button>
+          <button id="btn-zoom-close" class="btn-zoom-ctrl btn-zoom-close-x" title="Close (Esc)">✕</button>
+        </div>
       </div>
+      <div id="zoom-canvas" class="zoom-canvas">
+        <img id="zoom-img" src="" alt="" draggable="false" />
+      </div>
+      <div class="zoom-footer-hint">Scroll to zoom · Drag to pan · Double-click to fit</div>
     </div>
-    <div id="zoom-canvas" class="zoom-canvas">
-      <img id="zoom-img" src="" alt="" draggable="false" />
-    </div>
-    <div class="zoom-footer-hint">Scroll to zoom · Drag to pan · Double-click to fit</div>
   </div>
 
   <!-- ── SCREEN 3: Results ── -->

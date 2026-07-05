@@ -137,7 +137,7 @@ h1 {
 /* ── Screen 2: Culling ── */
 .cull-header {
   width: 100%;
-  max-width: 520px;
+  max-width: 760px;
   padding: 16px 20px 0;
 }
 
@@ -164,8 +164,8 @@ h1 {
 /* ── Card Arena ── */
 .card-arena {
   position: relative;
-  width: min(460px, 92vw);
-  height: min(560px, 62vh);
+  width: min(720px, 92vw);
+  height: min(780px, 78vh);
   margin: 16px auto 0;
 }
 
@@ -247,7 +247,7 @@ h1 {
   font-size: 13px;
   color: var(--muted);
   font-family: 'SF Mono', 'Fira Code', monospace;
-  max-width: 460px;
+  max-width: 720px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -324,12 +324,26 @@ h1 {
 .zoom-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.96);
+  background: rgba(0,0,0,0.72);
   z-index: 1000;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
 }
 .zoom-overlay.hidden { display: none; }
+
+.zoom-panel {
+  width: min(1000px, 90vw);
+  height: min(800px, 85vh);
+  background: #0a0a0b;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
 
 .zoom-header {
   display: flex;

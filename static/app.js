@@ -10,6 +10,7 @@ let dragCurrentX = 0;
 let zoomScale = 1;
 let zoomTx = 0, zoomTy = 0;
 let zoomPanning = false;
+let zoomDidPan = false;
 let zoomPanStartX = 0, zoomPanStartY = 0;
 let zoomPanTxStart = 0, zoomPanTyStart = 0;
 const ZOOM_MIN = 0.1, ZOOM_MAX = 12;
@@ -448,9 +449,15 @@ btnZoomClose.addEventListener('click', closeZoom);
 btnZoomFit.addEventListener('click',   zoomFit);
 btnZoom100.addEventListener('click',   zoom100);
 
-// Click outside image (on dark area) closes
+// Click outside image (on dark area) closes.
+// zoomImg has pointer-events:none, so e.target is always zoomCanvas even
+// when the click visually lands on the photo — check real image bounds instead.
 zoomCanvas.addEventListener('click', (e) => {
-  if (e.target === zoomCanvas) closeZoom();
+  if (zoomDidPan) { zoomDidPan = false; return; }
+  const imgRect = zoomImg.getBoundingClientRect();
+  const insideImg = e.clientX >= imgRect.left && e.clientX <= imgRect.right &&
+                     e.clientY >= imgRect.top && e.clientY <= imgRect.bottom;
+  if (!insideImg) closeZoom();
 });
 
 // Double-click toggles between fit and 1:1
@@ -484,6 +491,7 @@ zoomCanvas.addEventListener('wheel', (e) => {
 zoomCanvas.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return;
   zoomPanning = true;
+  zoomDidPan = false;
   zoomPanStartX = e.clientX;
   zoomPanStartY = e.clientY;
   zoomPanTxStart = zoomTx;
@@ -492,8 +500,11 @@ zoomCanvas.addEventListener('mousedown', (e) => {
 });
 window.addEventListener('mousemove', (e) => {
   if (!zoomPanning) return;
-  zoomTx = zoomPanTxStart + (e.clientX - zoomPanStartX);
-  zoomTy = zoomPanTyStart + (e.clientY - zoomPanStartY);
+  const dx = e.clientX - zoomPanStartX;
+  const dy = e.clientY - zoomPanStartY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) zoomDidPan = true;
+  zoomTx = zoomPanTxStart + dx;
+  zoomTy = zoomPanTyStart + dy;
   applyZoom();
 });
 window.addEventListener('mouseup', () => {
