@@ -22,9 +22,15 @@ def index():
     return render_template('index.html', is_windows=IS_WINDOWS)
 
 
+BROWSE_TIMEOUT_SECONDS = 300  # generous — this is how long a user has to pick a folder
+
+
 def _browse_folder_macos():
     script = 'POSIX path of (choose folder with prompt "Select folder to cull")'
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    result = subprocess.run(
+        ['osascript', '-e', script],
+        capture_output=True, text=True, timeout=BROWSE_TIMEOUT_SECONDS,
+    )
     if result.returncode != 0:
         # User canceled the dialog
         return ''
@@ -32,15 +38,30 @@ def _browse_folder_macos():
 
 
 def _browse_folder_windows():
+    # An invisible, topmost, off-screen owner window forces the dialog to
+    # come to the front — without an owner it can open behind other windows
+    # and look like the app has hung.
     script = (
         "Add-Type -AssemblyName System.Windows.Forms;"
+        "Add-Type -AssemblyName System.Drawing;"
+        "$owner = New-Object System.Windows.Forms.Form;"
+        "$owner.TopMost = $true;"
+        "$owner.ShowInTaskbar = $false;"
+        "$owner.Opacity = 0;"
+        "$owner.StartPosition = 'Manual';"
+        "$owner.Location = New-Object System.Drawing.Point(-2000, -2000);"
+        "$owner.Size = New-Object System.Drawing.Size(1, 1);"
+        "$owner.Show();"
+        "$owner.Activate();"
         "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
         "$d.Description = 'Select folder to cull';"
-        "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }"
+        "$result = $d.ShowDialog($owner);"
+        "$owner.Close();"
+        "if ($result -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }"
     )
     result = subprocess.run(
-        ['powershell', '-NoProfile', '-NonInteractive', '-Command', script],
-        capture_output=True, text=True,
+        ['powershell', '-NoProfile', '-Command', script],
+        capture_output=True, text=True, timeout=BROWSE_TIMEOUT_SECONDS,
     )
     return result.stdout.strip()
 
@@ -49,13 +70,13 @@ def _browse_folder_linux():
     if shutil.which('zenity'):
         result = subprocess.run(
             ['zenity', '--file-selection', '--directory', '--title=Select folder to cull'],
-            capture_output=True, text=True,
+            capture_output=True, text=True, timeout=BROWSE_TIMEOUT_SECONDS,
         )
         return result.stdout.strip()
     if shutil.which('kdialog'):
         result = subprocess.run(
             ['kdialog', '--getexistingdirectory', os.path.expanduser('~'), 'Select folder to cull'],
-            capture_output=True, text=True,
+            capture_output=True, text=True, timeout=BROWSE_TIMEOUT_SECONDS,
         )
         return result.stdout.strip()
     return None
@@ -76,6 +97,8 @@ def browse_folder():
                 }), 501
     except FileNotFoundError:
         return jsonify({'error': 'Native folder browser is not available on this system'}), 501
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Folder browser timed out. Try again or type the path manually.'}), 504
 
     return jsonify({'folder': folder})
 
