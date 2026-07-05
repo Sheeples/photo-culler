@@ -32,6 +32,17 @@ fi
 echo "  Checking dependencies..."
 .venv/bin/pip install -r requirements.txt -q
 
+# Check for a folder dialog tool (optional — powers the "Browse..." button).
+# macOS and Windows use built-in tools; Linux needs zenity or kdialog.
+if [[ "$(uname)" != "Darwin" ]] && ! command -v zenity &>/dev/null && ! command -v kdialog &>/dev/null; then
+    echo ""
+    echo "  NOTE: zenity/kdialog not found — the 'Browse...' folder picker will"
+    echo "  be disabled (you can still type a folder path manually). To enable it:"
+    echo "    sudo apt install zenity   # Debian/Ubuntu, GNOME"
+    echo "    sudo dnf install zenity   # Fedora"
+    echo ""
+fi
+
 # Free port 5050 if occupied
 lsof -ti :5050 | xargs kill -9 2>/dev/null || true
 

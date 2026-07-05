@@ -17,13 +17,16 @@
       <p class="subtitle">Swipe right to keep, left to reject</p>
       <form id="folder-form">
         <label for="folder-input">Folder path</label>
-        <input
-          type="text"
-          id="folder-input"
-          placeholder="e.g. ~/Photos/sonichu"
-          autocomplete="off"
-          spellcheck="false"
-        />
+        <div class="folder-input-row">
+          <input
+            type="text"
+            id="folder-input"
+            placeholder="e.g. ~/Photos/sonichu"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="button" id="btn-browse" title="Browse for folder">Browse…</button>
+        </div>
         <button type="submit" class="btn-primary">Load Photos</button>
       </form>
       <p id="picker-error" class="error hidden"></p>

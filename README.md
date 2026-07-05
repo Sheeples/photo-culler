@@ -26,6 +26,7 @@ Runs entirely on your machine. No cloud, no account, no internet required.
 - **Python 3.8 or newer** — [python.org/downloads](https://www.python.org/downloads/)
   - Windows: check *"Add Python to PATH"* during installation
 - **Git** (to clone) — [git-scm.com](https://git-scm.com)
+- **A native folder dialog tool** (optional, for the **Browse…** button) — macOS and Windows use built-in tools (`osascript`, PowerShell) with nothing extra to install; Linux needs `zenity` or `kdialog` (usually already installed with GNOME/KDE). Without one, you can still type a folder path manually.
 
 ---
 
@@ -59,7 +60,7 @@ The first run creates a virtual environment and installs dependencies automatica
 
 ### 1. Load a folder
 
-Enter the path to a folder containing photos, e.g. `~/Photos/vacation` or `C:\Users\you\Pictures\trip`. Click **Load Photos**.
+Enter the path to a folder containing photos, e.g. `~/Photos/vacation` or `C:\Users\you\Pictures\trip`, or click **Browse…** to pick it with a native folder dialog. Click **Load Photos**.
 
 Supported formats: JPEG, PNG, WEBP, HEIC, TIFF, GIF, BMP, AVIF, and all major RAW formats (see full list below).
 
@@ -69,8 +70,8 @@ Supported formats: JPEG, PNG, WEBP, HEIC, TIFF, GIF, BMP, AVIF, and all major RA
 |---|---|---|
 | Keep | `→` or `C` | Click **Keep** or swipe right |
 | Reject | `←` or `X` | Click **Reject** or swipe left |
-| Undo last decision | `Z` | Click **Undo** |
-| Zoom in | `Space` | Click the magnifying glass icon |
+| Undo last decision | `↓` or `Z` | Click **Undo** |
+| Zoom in / out | `Space` | Click the magnifying glass icon |
 | Finish early | — | Click **Finish** in the top bar |
 
 **Zoom controls** (while zoomed in):
@@ -163,6 +164,14 @@ Get-NetTCPConnection -LocalPort 5050 | ForEach-Object { Stop-Process -Id $_.Owni
 
 **Files not showing up**
 Check the folder path is correct and that it contains files with supported extensions. Subfolders are not scanned — only files directly inside the chosen folder.
+
+**"Browse…" button shows an error / does nothing**
+On Linux, install a folder dialog tool:
+```bash
+sudo apt install zenity   # Debian/Ubuntu, GNOME
+sudo dnf install zenity   # Fedora
+```
+(or `kdialog` on KDE desktops). macOS and Windows use built-in tools and need nothing extra. Either way, you can always type the folder path manually instead.
 
 **Python not found on Windows**
 Reinstall Python from [python.org](https://www.python.org/downloads/) and make sure to check *"Add Python to PATH"* on the first installer screen.

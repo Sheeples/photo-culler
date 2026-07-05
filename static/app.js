@@ -22,6 +22,7 @@ const screenResults = document.getElementById('screen-results');
 const folderForm    = document.getElementById('folder-form');
 const folderInput   = document.getElementById('folder-input');
 const pickerError   = document.getElementById('picker-error');
+const btnBrowse     = document.getElementById('btn-browse');
 
 const progressBar   = document.getElementById('progress-bar');
 const counterCurrent = document.getElementById('counter-current');
@@ -86,7 +87,7 @@ folderForm.addEventListener('submit', async (e) => {
   if (!folder) return;
 
   pickerError.classList.add('hidden');
-  const btn = folderForm.querySelector('button');
+  const btn = folderForm.querySelector('button[type="submit"]');
   btn.textContent = 'Loading…';
   btn.disabled = true;
 
@@ -109,6 +110,29 @@ folderForm.addEventListener('submit', async (e) => {
   } finally {
     btn.textContent = 'Load Photos';
     btn.disabled = false;
+  }
+});
+
+btnBrowse.addEventListener('click', async () => {
+  pickerError.classList.add('hidden');
+  btnBrowse.textContent = 'Browsing…';
+  btnBrowse.disabled = true;
+
+  try {
+    const res = await fetch('/api/browse-folder', { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+    if (data.folder) {
+      folderInput.value = data.folder;
+      folderInput.focus();
+    }
+  } catch (err) {
+    pickerError.textContent = err.message;
+    pickerError.classList.remove('hidden');
+  } finally {
+    btnBrowse.textContent = 'Browse…';
+    btnBrowse.disabled = false;
   }
 });
 

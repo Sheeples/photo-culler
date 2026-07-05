@@ -1,5 +1,7 @@
 import io
 import os
+import shutil
+import subprocess
 import sys
 import threading
 import webbrowser
@@ -18,6 +20,64 @@ IS_WINDOWS = sys.platform == 'win32'
 @app.route('/')
 def index():
     return render_template('index.html', is_windows=IS_WINDOWS)
+
+
+def _browse_folder_macos():
+    script = 'POSIX path of (choose folder with prompt "Select folder to cull")'
+    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+    if result.returncode != 0:
+        # User canceled the dialog
+        return ''
+    return result.stdout.strip()
+
+
+def _browse_folder_windows():
+    script = (
+        "Add-Type -AssemblyName System.Windows.Forms;"
+        "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
+        "$d.Description = 'Select folder to cull';"
+        "if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Write-Output $d.SelectedPath }"
+    )
+    result = subprocess.run(
+        ['powershell', '-NoProfile', '-NonInteractive', '-Command', script],
+        capture_output=True, text=True,
+    )
+    return result.stdout.strip()
+
+
+def _browse_folder_linux():
+    if shutil.which('zenity'):
+        result = subprocess.run(
+            ['zenity', '--file-selection', '--directory', '--title=Select folder to cull'],
+            capture_output=True, text=True,
+        )
+        return result.stdout.strip()
+    if shutil.which('kdialog'):
+        result = subprocess.run(
+            ['kdialog', '--getexistingdirectory', os.path.expanduser('~'), 'Select folder to cull'],
+            capture_output=True, text=True,
+        )
+        return result.stdout.strip()
+    return None
+
+
+@app.route('/api/browse-folder', methods=['POST'])
+def browse_folder():
+    try:
+        if sys.platform == 'darwin':
+            folder = _browse_folder_macos()
+        elif IS_WINDOWS:
+            folder = _browse_folder_windows()
+        else:
+            folder = _browse_folder_linux()
+            if folder is None:
+                return jsonify({
+                    'error': 'No folder browser found. Install zenity or kdialog, or type the path manually.'
+                }), 501
+    except FileNotFoundError:
+        return jsonify({'error': 'Native folder browser is not available on this system'}), 501
+
+    return jsonify({'folder': folder})
 
 
 @app.route('/api/load-folder', methods=['POST'])
