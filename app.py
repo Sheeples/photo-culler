@@ -38,20 +38,23 @@ def _browse_folder_macos():
 
 
 def _browse_folder_windows():
-    # An invisible, topmost, off-screen owner window forces the dialog to
-    # come to the front — without an owner it can open behind other windows
-    # and look like the app has hung.
+    # A plain TopMost owner isn't enough: Windows' foreground-lock timeout
+    # stops background-spawned processes from stealing focus, so the dialog
+    # can still land behind the active window. Minimizing then immediately
+    # restoring our own window is the standard workaround — Windows grants
+    # an exception for that specific sequence and lets it come to the front.
     script = (
         "Add-Type -AssemblyName System.Windows.Forms;"
         "Add-Type -AssemblyName System.Drawing;"
         "$owner = New-Object System.Windows.Forms.Form;"
-        "$owner.TopMost = $true;"
         "$owner.ShowInTaskbar = $false;"
-        "$owner.Opacity = 0;"
         "$owner.StartPosition = 'Manual';"
         "$owner.Location = New-Object System.Drawing.Point(-2000, -2000);"
         "$owner.Size = New-Object System.Drawing.Size(1, 1);"
         "$owner.Show();"
+        "$owner.WindowState = 'Minimized';"
+        "$owner.WindowState = 'Normal';"
+        "$owner.TopMost = $true;"
         "$owner.Activate();"
         "$d = New-Object System.Windows.Forms.FolderBrowserDialog;"
         "$d.Description = 'Select folder to cull';"
