@@ -182,7 +182,7 @@ document.addEventListener('keydown', (e) => {
   switch (e.key) {
     case 'ArrowRight': case 'c': case 'C': decide('keep'); break;
     case 'ArrowLeft':  case 'x': case 'X': decide('reject'); break;
-    case 'z': case 'Z': undo(); break;
+    case 'z': case 'Z': case 'ArrowDown': undo(); break;
   }
 });
 
@@ -539,7 +539,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !zoomOverlay.classList.contains('hidden')) { closeZoom(); return; }
   if (!screenCull.classList.contains('active')) return;
   if (e.target.tagName === 'INPUT') return;
-  if (e.key === ' ') { e.preventDefault(); openZoom(); }
+  if (e.key === ' ') {
+    e.preventDefault();
+    if (zoomOverlay.classList.contains('hidden')) openZoom();
+    else closeZoom();
+  }
 });
 
 /* ── Command tabs (Windows: PowerShell / CMD) ── */
